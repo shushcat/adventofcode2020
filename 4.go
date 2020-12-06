@@ -47,11 +47,6 @@ func (pport passport) setFields(line string) passport {
 	return pport
 }
 
-func main() {
-	path := ("4.txt")
-	fmt.Println(countValidPassports(path))
-}
-
 func countValidPassports(path string) int {
 	file, _ := os.Open(path)
 	defer file.Close()
@@ -73,5 +68,10 @@ func countValidPassports(path string) int {
 		}
 	}
 	return valid
+}
+
+func main() {
+	path := ("4.txt")
+	fmt.Println(countValidPassports(path))
 }
 
