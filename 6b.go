@@ -1,5 +1,3 @@
-// TODO Don't rely on an extra line at the end of the input.
-
 package main
 
 import (
@@ -10,53 +8,49 @@ import (
 )
 
 type boardingGroup struct {
-	ansrs []string
+	ppl int
+	ans map[string]int
 }
 
-func (grp boardingGroup) UniqAppend(ansrs []string) boardingGroup {
-	for _, ans := range ansrs {
-		grp.ansrs = append(grp.ansrs, ans)
+func (grp boardingGroup) AppendLine(ans []string) boardingGroup {
+	grp.ppl += 1
+	for _, a := range ans {
+		grp.ans[a] = grp.ans[a] + 1
 	}
-	grp.ansrs = uniq(grp.ansrs)
 	return grp
 }
 
-func uniq(ansrs []string) []string {
-	m := make (map[string]int)
-	var u []string
-	for _, n := range ansrs {
-		if (m[n] == 0) {
-			u = append(u, n)
+func (grp boardingGroup) UnanimousAns() []string {
+	uans := []string{}
+	for a, _ := range grp.ans {
+		if grp.ans[a] == grp.ppl {
+			uans = append(uans, a)
 		}
-		m[n] += 1
 	}
-	return u
+	return uans
 }
 
-func sumAnswers(path string) int {
+func sumUnanimousAnswers(path string) int {
 	file, _ := os.Open(path)
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
-	var grp boardingGroup
-	ansSum := 0
+	grp := boardingGroup{0, make(map[string]int)}
+	unanimousSum := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 		if !(line == "") {
 			lineAnsrs := strings.Split(line, "")
-			grp = grp.UniqAppend(lineAnsrs)
+			grp = grp.AppendLine(lineAnsrs)
 		} else {
-			fmt.Println(grp, "has", len(grp.ansrs), "answers")
-			ansSum += len(grp.ansrs)
-			grp = boardingGroup{}
+			unanimousSum += len(grp.UnanimousAns())
+			fmt.Println(grp, "has", len(grp.UnanimousAns()), "unanimous answers")
+			grp = boardingGroup{0, make(map[string]int)}
 		}
 	}
-	return ansSum
+	return unanimousSum
 }
 
 func main() {
-	// slice := []int{1,2,3,4,5,5,5,6,7,4}
 	path := "6.txt"
-	fmt.Println(sumAnswers(path))
-	// slice := []string{"a", "a", "b", "c", "d", "d", "d"}
-	// fmt.Println(uniq(slice))
+	fmt.Println(sumUnanimousAnswers(path))
 }
