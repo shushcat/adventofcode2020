@@ -53,19 +53,6 @@ func readRules(path string) []rule {
 	return rs
 }
 
-// func searchContents(rs []rule, bag string, depth int) int {
-// 	depth += 1
-// 	for _, r := range rs {
-// 		fmt.Println("r is", r)
-// 		if ruleContains(r, bag) {
-// 			return depth
-// 		} else {
-// 			depth = searchContents(rs[1:], bag, depth)
-// 		}
-// 	}
-// 	return depth
-// }
-
 func delRule(rs []rule, r rule) []rule {
 	rs2 := []rule{}
 	for _, v := range rs {
@@ -96,10 +83,6 @@ func min(ary []int) int {
 }
 
 func searchContents(r rule, rs []rule, bag string, depth int, found bool) (int, bool) {
-	// fmt.Println("Checking for", bag, "in", r.name, "at depth", depth)
-	// if len(rs) == 0 {
-		// return depth - 1, false
-	// }
 	if !ruleContains(r, bag) {
 		rs = delRule(rs, r)
 		for k, _ := range r.held {
@@ -120,11 +103,10 @@ func searchContents(r rule, rs []rule, bag string, depth int, found bool) (int, 
 func canContain(rs []rule, bag string) int {
 	canContain := 0
 	for i, _ := range rs {
-		_, contains := searchContents(rs[i], rs, "shiny gold", 1, false)
+		_, contains := searchContents(rs[i], rs, bag, 1, false)
 		if contains {
 			canContain += 1
 		}
-		// fmt.Println(v.name, depth, contains)
 	}
 	return canContain
 }
