@@ -13,9 +13,6 @@ type instruction struct {
 	arg int
 }
 
-// acc: add to Accumulator
-// jmp: adds to instruction index; +1 -> next, -1 -> prev, &c
-// nop: impotent
 func parseInstructions(path string) []instruction {
 	file, _ := os.Open(path)
 	defer file.Close()
@@ -31,17 +28,12 @@ func parseInstructions(path string) []instruction {
 	return instructions
 }
 
-// func execInstruction(instruction) bool {
-// }
-
-
-func runInstructions(instructions []instruction) int {
+func runInstructions(instructions []instruction) (int, bool) {
 	trace := make([]bool, len(instructions))
 	accum := 0
 	for i := 0; i < len(instructions); {
-		fmt.Println(i, instructions[i], trace[i])
 		if trace[i] == true {
-			break
+			return accum, false
 		}
 		trace[i] = true
 		switch instructions[i].opr {
@@ -54,14 +46,31 @@ func runInstructions(instructions []instruction) int {
 			i += 1
 		}
 	}
-	fmt.Println(trace)
-	return accum
+	return accum, true
+}
+
+func mutInstructions(instructions []instruction) int {
+	mutIns := make([]instruction, len(instructions))
+	for i := 0; i < len(instructions); i++ {
+		copy(mutIns, instructions)
+		switch mutIns[i].opr {
+		case "jmp":
+			mutIns[i].opr = "nop"
+		case "nop":
+			mutIns[i].opr = "jmp"
+		}
+		if acc, ok := runInstructions(mutIns); ok {
+			return acc
+		}
+	}
+	return 0
 }
 
 func main() {
-	// path := "8_small.txt"
 	path := "8.txt"
 	instructions := parseInstructions(path)
-	fmt.Println(runInstructions(instructions))
-	// fmt.Println(instructions)
+	part1, _ := runInstructions(instructions)
+	fmt.Println("Part 1:", part1)
+	part2 := mutInstructions(instructions)
+	fmt.Println("Part 2:", part2)
 }
