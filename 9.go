@@ -81,12 +81,9 @@ func sumContiguousSumMinMax(target int, data []int) int {
 }
 
 func main() {
-	// path := "9_small.txt"
 	path := "9.txt"
 	data := parseData(path)
 	invalid, _ := validateNums(25, data)
-	fmt.Println(sumContiguousSumMinMax(invalid, data))
-
-	// fmt.Println(validateNums(5, parseData("9_small.txt")))
-	// fmt.Println(validateNums(25, parseData("9.txt")))
+	fmt.Println("Part 1:", invalid)
+	fmt.Println("Part 2:", sumContiguousSumMinMax(invalid, data))
 }
