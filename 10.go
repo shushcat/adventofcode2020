@@ -19,7 +19,7 @@ func newAdapter(jo int) adapter {
 	return a
 }
 
-func listSortedAdapters(path string) []adapter {
+func sortedAdapters(path string) []adapter {
 	file, _ := os.Open(path)
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
@@ -40,64 +40,29 @@ func listSortedAdapters(path string) []adapter {
 	return adapters
 }
 
-func min(a []int) int {
-	m := a[0]
-	for _, v := range a {
-		if v < m {
-			m = v
-		}
-	}
-	return m
-}
-
-func adapterDist(adapters []adapter) []adapter {
+func adapterDistances(adapters []adapter) []adapter {
 	for i := 1; i < len(adapters); i++ {
-		switch adapters[i].jo - adapters[i-1].jo {
-		case 1:
-			adapters[i-1].dnext = 1
-		case 2:
-			adapters[i-1].dnext = 2
-		case 3:
-			adapters[i-1].dnext = 3
-		}
+		adapters[i-1].dnext = adapters[i].jo - adapters[i-1].jo
 	}
 	return adapters
 }
 
-func adapterDistSums(adapters []adapter) map[string]int {
-	distSums := make(map[string]int)
+func adapterDistSums(adapters []adapter) map[int]int {
+	distSums := make(map[int]int)
 	for _, a := range adapters {
 		switch a.dnext {
 		case 1:
-			distSums["one"] += 1
+			distSums[1] += 1
 		case 2:
-			distSums["two"] += 1
+			distSums[2] += 1
 		case 3:
-			distSums["three"] += 1
+			distSums[3] += 1
 		}
 	}
 	return distSums
 }
 
-func numAdapterChains(adapters []adapter) []int {
-	numChains := []int{1}
-	for i := 1; i < (len(adapters) - 1); i++ {
-		if (adapters[i].dnext == 1) && (adapters[i+1].dnext == 1) {
-			numChains = append(numChains, 2)
-		}
-	}
-	return numChains
-}
-
-func sumSlice(s []int) int {
-	sum := 0
-	for _, n := range s {
-		sum += n
-	}
-	return sum
-}
-
-func countPaths(adapters []adapter) int {
+func adapterChains(adapters []adapter) []adapter {
 	for i := 1; i < len(adapters); i++ {
 		sliceLow := 0
 		if i - 3 < 0 {
@@ -115,14 +80,14 @@ func countPaths(adapters []adapter) int {
 			}
 		}
 	}
-	return adapters[len(adapters)-1].priors
+	return adapters
 }
 
 func main() {
 	// path := "10_small1.txt"
 	// path := "10_small2.txt"
 	path := "10.txt"
-	adapters := adapterDist(listSortedAdapters(path))
-	fmt.Println("Part 1:", adapterDistSums(adapters)["one"] * adapterDistSums(adapters)["three"])
-	fmt.Println("Part 2:", countPaths(adapters))
+	adapters := adapterDistances(sortedAdapters(path))
+	fmt.Println("Part 1:", adapterDistSums(adapters)[1] * adapterDistSums(adapters)[3])
+	fmt.Println("Part 2:", adapterChains(adapters)[len(adapters)-1].priors)
 }
