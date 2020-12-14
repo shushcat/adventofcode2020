@@ -57,13 +57,17 @@ func numSurrounding(layout [][]string, row int, seat int) int {
 	return surrounding
 }
 
-func numVisible(layout [][]string, row int, seat int) int {
-}
-
-func peepBeam(layout [][]string, row int, seat int, x int, y int) int {
-	//  1  1 means look SW
-	// -1  1 means look NW
-	// &c
+func peepBeam(layout [][]string, row int, seat int, i int, j int) int {
+	for {
+		row, seat = row + i, seat + j
+		if row < 0 || seat < 0 || row > len(layout) - 1 || seat > len(layout[row]) - 1 {
+			return 0
+		} else if layout[row][seat] == "#" {
+			return 1
+		} else if layout[row][seat] == "L" {
+			return 0
+		}
+	}
 }
 
 func printLayout(layout [][]string) {
@@ -72,8 +76,13 @@ func printLayout(layout [][]string) {
 	}
 }
 
-func tickSeat(layout [][]string, row int, seat int) string {
-	surrounding := numSurrounding(layout, row, seat)
+func tickSeat(layout [][]string, row int, seat int, part int) string {
+	surrounding := 0
+	if part == 1 {
+		surrounding = numSurrounding(layout, row, seat)
+	} else if part == 2 {
+		surrounding = numPeepable(layout, row, seat)
+	}
 	if layout[row][seat] == "L" {
 		if surrounding == 0 {
 			return "#"
@@ -81,7 +90,7 @@ func tickSeat(layout [][]string, row int, seat int) string {
 			return "L"
 		}
 	} else if layout[row][seat] == "#" {
-		if surrounding > 3 {
+		if (surrounding > 3 && part == 1) || (surrounding > 4 && part == 2) {
 			return "L"
 		} else {
 			return "#"
@@ -90,24 +99,24 @@ func tickSeat(layout [][]string, row int, seat int) string {
 	return "."
 }
 
-func tickUniverse(layout [][]string) [][]string {
+func tickUniverse(layout [][]string, part int) [][]string {
 	var tick [][]string
 	for row := 0; row < len(layout); row++ {
 		tick = append(tick, []string{})
 		for seat := 0; seat < len(layout[row]); seat++ {
-			tick[row] = append(tick[row], tickSeat(layout, row, seat))
+			tick[row] = append(tick[row], tickSeat(layout, row, seat, part))
 		}
 	}
 	return tick
 }
 
-func runDownUniverse(layout [][]string) ([][]string, int) {
+func runDownUniverse(layout [][]string, part int) ([][]string, int) {
 	tick := layout
 	lastTick := tick
 	entropyDistance := 0
 	for i := 0; ; i++ {
 		entropyDistance += 1
-		tick = tickUniverse(tick)
+		tick = tickUniverse(tick, part)
 		if reflect.DeepEqual(tick, lastTick) {
 			break
 		}
@@ -128,10 +137,23 @@ func occupiedSeats(layout [][]string) int {
 	return occupied
 }
 
+func numPeepable(layout [][]string, row int, seat int) int {
+	peeped := 0
+	for i := -1; i <= 1; i++ {
+		for j:= -1; j <= 1; j++ {
+			if !(j == 0 && i == 0) {
+				peeped = peeped + peepBeam(layout, row, seat, i, j)
+			}
+		}
+	}
+	return peeped
+}
+
 func main() {
-	// path := "11_small.txt"
 	path := "11.txt"
 	layout := seatLayout(path)
-	// stablized, _ := runDownUniverse(layout)
-	// fmt.Println("Part 1:", occupiedSeats(stablized))
+	surround, _ := runDownUniverse(layout, 1)
+	fmt.Println("Part 1:", occupiedSeats(surround))
+	peeped, _ := runDownUniverse(layout, 2)
+	fmt.Println("Part 2:", occupiedSeats(peeped))
 }
