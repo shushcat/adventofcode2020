@@ -64,9 +64,7 @@ func changeShipHeading(s ship, in instruction) ship {
 
 func moveShip(s ship, in instruction) ship {
 	switch in.dir {
-	case "L":
-		s = changeShipHeading(s, in)
-	case "R":
+	case "L", "R":
 		s = changeShipHeading(s, in)
 	case "N":
 		s.nsPos += in.dis
@@ -83,14 +81,23 @@ func moveShip(s ship, in instruction) ship {
 	return s
 }
 
-func moveWaypoint(w waypoint, in instruction) waypoint {
-	switch in.dir {
-	case "L":
-		ns, ew := w.nsPos, w.ewPos
-		w.nsPos, w.ewPos = ew, -ns
-	case "R":
+func rotateWaypoint(w waypoint, in instruction) waypoint {
+	if in.dir == "L" {
+		in.dis = (360 - in.dis)/90
+	} else {
+		in.dis = in.dis/90
+	}
+	for i:= 0; i < in.dis; i++ {
 		ns, ew := w.nsPos, w.ewPos
 		w.nsPos, w.ewPos = -ew, ns
+	}
+	return w
+}
+
+func moveWaypoint(w waypoint, in instruction) waypoint {
+	switch in.dir {
+	case "L", "R":
+		w = rotateWaypoint(w, in)
 	case "N":
 		w.nsPos += in.dis
 	case "S":
@@ -151,5 +158,5 @@ func main() {
 	fmt.Println("Part 1:", manhattanDistance(s))
 	s = ship{"E", 0, 0}
 	s = navigateByWaypoint(s, instructions)
-	fmt.Println("Part 2:", manhattanDistance(s))
+	fmt.Println("Part 2:", manhattanDistance(s)) // want 30761
 }
