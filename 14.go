@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
-	"os"
-	"bufio"
 )
 
 type seasys struct {
@@ -44,47 +44,38 @@ func setAdr(s seasys, adr int, val int) seasys {
 	return s
 }
 
-func (s seasys) addBinAdr(binadr []string, val int) {
-	if a, err := strconv.ParseInt(strings.Join(binadr, ""), 2, 64); err == nil {
-		s.mem[int(a)] = val
-	}
-}
-
-func setFloatingAdrs(s seasys, badr []string, val int) seasys {
-	fmt.Println("Adding", badr, "variants")
-	ladr := make([]string, len(badr))
-	for i, v := range(badr) {
-		ladr[i] = v
-	}
-	for i := 0; i < 36; i++ {
-		if badr[i] == "X" {
-			ladr[i] = "0"
-		}
-	}
-	s.addBinAdr(ladr, val)
-	fmt.Println(s.mem)
-	for i := 0; i < 36; i++ {
-		if badr[i] == "X" {
-			// fmt.Println(s.mem)
-			ladr[i] = "1"
-			s.addBinAdr(ladr, val)
-		}
-	}
-	return s
-}
-
-func setAdr2(s seasys, adr int, val int) seasys {
+func setFloatingAdrs(s seasys, adr int, val int) seasys {
 	badr := strings.Split(strconv.FormatInt(int64(adr), 2), "")
-	// Prepend to badr array
-	for i := 36 - len(badr); i > 0; i-- {
+	for len(badr) < len(s.mask) {
 		badr = append([]string{"0"}, badr...)
 	}
-	for i := 0; i < 36; i++ {
-		if (s.mask[i] == "1") || (s.mask[i] == "X") {
-			badr[i] = s.mask[i]
+	count := 0
+	for _, v := range s.mask {
+		if v == "X" {
+			count += 1
 		}
 	}
-	s = setFloatingAdrs(s, badr, val)
+	for pval := 0; pval <= ((1 << count) - 1); pval++ {
+		bpval := strings.Split(strconv.FormatInt(int64(pval), 2), "")
+		for len(bpval) < count {
+			bpval = append([]string{"0"}, bpval...)
+		}
+		k := 0
+		padr := []string{}
+		for j, v := range s.mask {
+			switch v {
+			case "0":
+				padr = append(padr, badr[j])
+			case "1":
+				padr  = append(padr, "1")
+			case "X":
+				padr = append(padr, bpval[k])
+				k += 1
+			}
+		}
+		a, _ := strconv.ParseInt(strings.Join(padr, ""), 2, 64)
+		s.mem[int(a)] = val
+	}
 	return s
 }
 
@@ -108,51 +99,18 @@ func runProgram(path string, version int) seasys {
 			case 1:
 				s = setAdr(s, adr, val)
 			case 2:
-				s = setAdr2(s, adr, val)
+				s= setFloatingAdrs(s, adr, val)
 			}
 		}
 	}
 	return s
 }
 
-// func permuteSmall(a []string) []string {
-// 	fmt.Print(a, " -> ")
-// 	b := a
-// 	for i := 0; i < len(a); i++ {
-// 		if a[i] == "X" {
-// 			b[i] = "1"
-// 			permuteSmall(b)
-// 			b := a
-// 			b[i] = "0"
-// 			permuteSmall(b)
-// 		}
-// 	}
-// 	fmt.Print(b, "\n")
-// 	return b
-// }
-
-func permuteSmall(a []string) {
-	count := 1
-	for _, v := range a {
-		if v == "X" {
-			count += 1
-		}
-	}
-	for i := 0; i <= count; i++ {
-		bval := strings.Split(strconv.FormatInt(int64(i), 2), "")
-		fmt.Println(bval)
-	}
-}
-
 func main() {
-	// path := "14_small.txt"
-	// path := "14_small2.txt"
-	// s := seasys{}
-	// path := "14.txt"
-	// s = runProgram(path, 1)
-	// fmt.Println("Part 1:", s.memSum())
-	// s = runProgram(path, 2)
-	// fmt.Println(s)
-	small := []string{"X", "0", "X"}
-	permuteSmall(small)
+	s := seasys{map[int]int{}, [36]string{}}
+	path := "14.txt"
+	s = runProgram(path, 1)
+	fmt.Println("Part 1:", s.memSum())
+	s = runProgram(path, 2)
+	fmt.Println("Part 2:", s.memSum())
 }
