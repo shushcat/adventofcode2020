@@ -28,7 +28,6 @@ func (ts turns) GenNext() turns {
 }
 
 func (ts turns) NthSpoken(nth int) int {
-	nth = nth
 	if nth <= ts.nth {
 		for k, v := range ts.nums {
 			if v == nth {
