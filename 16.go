@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 type rule struct {
-	name string
+	name   string
 	ranges []int
 }
 
@@ -49,7 +50,7 @@ func mergeRanges(rs []rule) []bool {
 		for len(merged) <= rule.ranges[len(rule.ranges)-1] {
 			merged = append(merged, false)
 		}
-		for i := 0; i < len(rule.ranges) - 1; i += 2 {
+		for i := 0; i < len(rule.ranges)-1; i += 2 {
 			l, h := rule.ranges[i], rule.ranges[i+1]
 			for j := l; j <= h; j++ {
 				merged[j] = true
@@ -74,7 +75,7 @@ func validateTicket(t ticket, rs []rule) ticket {
 	return t
 }
 
-func parseInput(path string) ([]rule, []ticket) {
+func parseInput(path string) ([]ticket, []rule) {
 	file, _ := os.Open(path)
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
@@ -94,23 +95,98 @@ func parseInput(path string) ([]rule, []ticket) {
 			}
 		}
 	}
-	return rules, tickets
+	return tickets, rules
 }
 
-func ticketScanError(tickets []ticket, rules []rule) int {
+func sumScanError(tickets []ticket, rules []rule) int {
 	sumErr := 0
-	for _, t := range tickets[1:] {
+	for _, t := range tickets {
 		t = validateTicket(t, rules)
 		sumErr += t.valid
 	}
 	return sumErr
 }
 
+func discardInvalidNearby(tickets []ticket, rules []rule) []ticket {
+	ts := []ticket{}
+	for _, t := range tickets[1:] {
+		t = validateTicket(t, rules)
+		if t.valid == 0 {
+			ts = append(ts, t)
+		}
+	}
+	return ts
+}
+
+func valueField(tickets []ticket, rules []rule) [][]int {
+	validTickets := discardInvalidNearby(tickets, rules)
+	valField := [][]int{}
+	for i, r := range rules {
+		// Rules and fields.
+		valField = append(valField, []int{})
+		for field := 0; field < len(rules); field++ {
+			valField[i] = append(valField[i], 0)
+			validFields := 0
+			validRuleRange := mergeRanges([]rule{r})
+			for _, t := range validTickets {
+				fieldInRange := validRuleRange[t.vals[field]]
+				if fieldInRange {
+					validFields += 1
+				}
+			}
+			if validFields == len(validTickets) {
+				valField[i][field] = 1
+			}
+		}
+	}
+	return valField
+}
+
+func ticketFieldNames(tickets []ticket, rules []rule) map[int]string {
+	// valField ≡ rules x fields
+	valField := valueField(tickets, rules)
+	fieldMap := map[int]string{}
+	for r := 0; r < len(valField); r++ {
+		slots := 0
+		field := 0
+		for f := 0; f < len(valField[r]); f++ {
+			if valField[r][f] == 1 {
+				slots += 1
+				field = f
+			}
+		}
+		if slots == 1 {
+			fieldMap[field] = rules[r].name
+			for i := 0; i < len(valField); i++ {
+				valField[i][field] = 0
+			}
+			r = -1
+		}
+	}
+	return fieldMap
+}
+
+func multDepartureFields(tickets []ticket, rules []rule) int {
+	fieldMap := ticketFieldNames(tickets, rules)
+	t := tickets[0]
+	var depFields []int
+	for i, f := range fieldMap {
+		if ok, _ := regexp.MatchString("^departure", f); ok {
+			depFields = append(depFields, t.vals[i])
+		}
+	}
+	prod := 1
+	for _, f := range depFields {
+		prod = prod * f
+	}
+	return prod
+}
+
 func main() {
-	// path := "16_small.txt"	// -> 71
-	path := "16.txt"	// -> 19240
-	rules, tickets := parseInput(path)
-	fmt.Println("Part 1:", ticketScanError(tickets, rules))
-	// tic := validateTicket(tickets[4], rules)
-	// fmt.Println(tic)
+	// path := "16_small.txt"
+	// path := "16_small2.txt"
+	path := "16.txt"
+	tickets, rules := parseInput(path)
+	fmt.Println("Part 1:", sumScanError(tickets, rules))
+	fmt.Println("Part 2:", multDepartureFields(tickets, rules))
 }
