@@ -30,7 +30,8 @@ type Statement []*Token
 
 func main() {
 	// Read inputs into slice of int
-	input := readInputs("18_small1.txt")
+	// input := readInputs("18_small1.txt")
+	input := readInputs("18.txt")
 
 	// Part 1 - parse, evaluate and sum statements with equal precedence
 	precedence := map[string]int{

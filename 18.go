@@ -40,16 +40,46 @@ func line2Expr1(line string) expr {
 	return ex
 }
 
+// func parenIndex(a []string, p string) int {
+// 	if p == ")" {
+// 		for i := 0; i < len(a); i++ {
+// 			if a[i] == ")" {
+// 				return i
+// 			}
+// 		}
+// 	} else if p == "(" {
+// 		for i := len(a) - 1; i >= 0; i-- {
+// 			if a[i] == "(" {
+// 				return i
+// 			}
+// 		}
+// 	}
+// 	return -1
+// }
+
 func parenIndex(a []string, p string) int {
+	nestLvl := 0
 	if p == ")" {
 		for i := 0; i < len(a); i++ {
+			if a[i] == "(" {
+				nestLvl += 1
+			}
 			if a[i] == ")" {
+				nestLvl -= 1
+			}
+			if (a[i] == ")" && nestLvl == 0) || i == len(a)-1 {
 				return i
 			}
 		}
 	} else if p == "(" {
 		for i := len(a) - 1; i >= 0; i-- {
+			if a[i] == ")" {
+				nestLvl += 1
+			}
 			if a[i] == "(" {
+				nestLvl -= 1
+			}
+			if (a[i] == "("  && nestLvl == 0) || i == 0 {
 				return i
 			}
 		}
@@ -58,7 +88,6 @@ func parenIndex(a []string, p string) int {
 }
 
 func bindAddition(ex expr, a []string) expr {
-	fmt.Println(ex)
 	for i := 1; i < len(a)-1; i++ {
 		if a[i] == "+" {
 			prev := a[:i]
@@ -177,20 +206,15 @@ func evalExpr(ex expr) expr {
 	for prec >= 0 {
 		i := 0
 		for i < len(ex.symb) {
-		// for i < len(ex.symb) {
-			fmt.Println(prec, ex)
 			if ex.prec[i] == prec {
-			// if ex.prec[i] == prec && i+2 < len(ex.symb) {
-				ex = ex.SyncPrec(prec)
 				if e, ok := ex.OpTri(i); ok {
 					ex = e
 					i--
 				}
-				// ex, _ = ex.OpTri(i)
-				// i--
 			}
 			i = i + 1
 		}
+		ex = ex.SyncPrec(prec)
 		prec--
 	}
 	return ex
@@ -218,20 +242,40 @@ func sumExprs(path string, part int) int {
 	return sum
 }
 
+func testSampleData() {
+	path := "18_small1.txt"
+	file, _ := os.Open(path)
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	num := 0
+	ans1 := [...]int{71, 51, 26, 437, 12240, 13632}
+	ans2 := [...]int{231, 51, 46, 1445, 669060, 23340}
+	for scanner.Scan() {
+		line := scanner.Text()
+		a1, _ := strconv.Atoi(evalExpr(line2Expr1(line)).symb[0])
+		a2, _ := strconv.Atoi(evalExpr(line2Expr2(line)).symb[0])
+		m1, m2 := a1 == ans1[num], a2 == ans2[num]
+		fmt.Print(num+1, ". ", a1, " (", m1, ") ", a2, " (", m2, ")\n")
+		if m1 == false {
+			fmt.Println("ERROR:", a1, "should be", ans1[num])
+		}
+		if m2 == false {
+			fmt.Println("ERROR:", a2, "should be", ans2[num])
+		}
+		num += 1
+	}
+}
+
 func main() {
-	// line := "1 + 2 * 3 + 4 * 5 + 6"
-	// line := "1 + (2 * 3) + (4 * (5 + 6))"
-	// line := "2 * 3 + (4 * 5)"
-	// line := "5 + (8 * 3 + 9 + 3 * 4 * 3)"
-	// line:= "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))"
-	// line := "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2"
-	// line := "((((((2 + 4) * 9) * ((6 + 9) * (8 + )6) + 6)) + 2) + 4) * 2"
+	// testSampleData()
+	// line := "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2)"
+	// ex1 := line2Expr1(line)
+	// ex2 := line2Expr2(line)
+	// evalExpr(ex1)
+	// fmt.Println(evalExpr(ex1))
+	// fmt.Println(evalExpr(ex1), evalExpr(ex2))
 	// path := "18_small1.txt"
-	ex := line2Expr2(line)
-	// fmt.Println(ex)
-	fmt.Println(evalExpr(ex))
-	// ex := line2Expr1(line)
-	// path := "18.txt"
-	// fmt.Println("Part 1:", sumExprs(path, 1))
-	// fmt.Println("Part 2:", sumExprs(path, 2))
+	path := "18.txt"
+	fmt.Println("Part 1:", sumExprs(path, 1))
+	fmt.Println("Part 2:", sumExprs(path, 2))
 }
