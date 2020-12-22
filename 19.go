@@ -9,8 +9,18 @@ import (
 
 type rules map[string]string
 type messages []string
-// See the Ruby file for this problem for a non-stupid way.
+// TODO Come back to this problem if I need to learn about "recursive regular expressions", also known as "subexpressions".
+// See the Ruby file for this problem for a non-stupid way.  The discussion under the comment at https://old.reddit.com/r/adventofcode/comments/kg1mro/2020_day_19_solutions/ggeajnr/ elaborates on match expression used in the Ruby program.
 var mindDumb string = "42 31 | 42 42 31 31 | 42 42 42 31 31 31 | 42 42 42 42 31 31 31 31 | 42 42 42 42 42 31 31 31 31 31"
+// solver[11] = "(?<r>#{solver[42]}\\g<r>?#{solver[31]})"
+// For more on parsing, see https://en.wikipedia.org/wiki/CYK_algorithm.
+
+// "Lua does not have proper regex, but it honestly never even crossed my mind
+// that it was necessary for part 2. Recursively chomp off the prefix of the
+// message and compare it to the permutations of rule 42. Do the same for the
+// suffix and rule 31. If you end up with an empty string for your message, and
+// you chomped at least 2 prefixes and 1 suffix, and you had at least 1 more
+// prefix than suffixes, then you count it."
 
 func parseInput(path string) (rules, messages) {
 	b, _ := ioutil.ReadFile(path)
@@ -61,12 +71,8 @@ func recursiveRuleReplaceBadLoops(rs rules, rval string) string {
 			if t == "8" {
 				rs[t] = " ( 42 ) +"
 			} else if t == "11" {
-				// rs[t] = "( ? P g < r > 42 ) ( 31 ) +"
-// rs[t] = "42 42 42 42 42 42 42 31 31 31 31 31 31 31"
 				rs[t] = mindDumb
-		// solver[11] = "(?<r>#{solver[42]}\\g<r>?#{solver[31]})"
 			}
-
 			tokens[j] = wrapOrRule(rs[t])
 		}
 	}
