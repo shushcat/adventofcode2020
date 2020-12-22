@@ -9,6 +9,8 @@ import (
 
 type rules map[string]string
 type messages []string
+// See the Ruby file for this problem for a non-stupid way.
+var mindDumb string = "42 31 | 42 42 31 31 | 42 42 42 31 31 31 | 42 42 42 42 31 31 31 31 | 42 42 42 42 42 31 31 31 31 31"
 
 func parseInput(path string) (rules, messages) {
 	b, _ := ioutil.ReadFile(path)
@@ -52,8 +54,37 @@ func recursiveRuleReplace(rs rules, rval string) string {
 	return s
 }
 
-func rule2Regex(rs rules, r string) *regexp.Regexp {
-	r = recursiveRuleReplace(rs, r)
+func recursiveRuleReplaceBadLoops(rs rules, rval string) string {
+	tokens := strings.Split(rval, " ")
+	for j, t := range tokens {
+		if ok, _ := regexp.MatchString("[0-9]+", t); ok {
+			if t == "8" {
+				rs[t] = " ( 42 ) +"
+			} else if t == "11" {
+				// rs[t] = "( ? P g < r > 42 ) ( 31 ) +"
+// rs[t] = "42 42 42 42 42 42 42 31 31 31 31 31 31 31"
+				rs[t] = mindDumb
+		// solver[11] = "(?<r>#{solver[42]}\\g<r>?#{solver[31]})"
+			}
+
+			tokens[j] = wrapOrRule(rs[t])
+		}
+	}
+	s := strings.Join(tokens, " ")
+	if ok, _ := regexp.MatchString(".*[0-9]+.*", s); ok {
+		s = recursiveRuleReplaceBadLoops(rs, s)
+	}
+	s = strings.ReplaceAll(s, "\"", "")
+	s = strings.ReplaceAll(s, "  ", " ")
+	return s
+}
+
+func rule2Regex(rs rules, r string, part int) *regexp.Regexp {
+	if part == 1 {
+		r = recursiveRuleReplace(rs, r)
+	} else if part == 2 {
+		r = recursiveRuleReplaceBadLoops(rs, r)
+	}
 	r = strings.ReplaceAll(r, " ", "")
 	r = "^" + r + "$"
 	rx := regexp.MustCompile(r)
@@ -70,10 +101,27 @@ func sumMatches(rx *regexp.Regexp, ms messages) int {
 	return sum
 }
 
+func printMatches(rx *regexp.Regexp, ms messages) {
+	for _, m := range ms {
+		if rx.MatchString(m) {
+			fmt.Println(m)
+		}
+	}
+}
+
 func main() {
 	// path := "19_small.txt"
+	// path := "19_small2.txt"
+	// path := "19_small2_loop.txt"
 	path := "19.txt"
 	rs, ms := parseInput(path)
-	rx := rule2Regex(rs, rs["0"])
+	rx := rule2Regex(rs, rs["0"], 1)
 	fmt.Println("Part 1:", sumMatches(rx, ms))
+	// path2 := "19_small2_loop.txt"
+	path2 := "19_loop.txt"
+	rs, ms = parseInput(path2)
+	rx = rule2Regex(rs, rs["0"], 2)
+	fmt.Println("Part 2:", sumMatches(rx, ms))
+	// r := regexp.MustCompile(mindDumb)
+	// fmt.Println(r.Simplify())
 }
