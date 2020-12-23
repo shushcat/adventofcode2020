@@ -13,7 +13,6 @@ type tile struct {
 	pat  [][]string
 }
 type stack map[int]tile
-type board map[int]tile
 
 func (t tile) Corner(ts stack) bool {
 	// compare 1951 and 2311 at first
@@ -41,12 +40,28 @@ func (t tile) Corner(ts stack) bool {
 	return false
 }
 
-// func placed(b board, tID int) bool {
-// 	if _, ok := b[tID]; ok {
-// 		return true
-// 	}
-// 	return false
-// }
+func findCorner(ts stack) tile {
+	matches := 0
+	corner := tile{0, 0, 0, [][]string{}}
+	fmt.Println(len(ts))
+	for _, t1 := range ts {
+		for _, t2 := range ts {
+			if _, ok, _ := fitTile(t1, t2); ok {
+				matches += 1
+			}
+		}
+		if matches == 2 {
+			corner = tile{t1.x, t1.y, t1.id, t1.pat}
+			break
+		}
+	}
+
+	// fmt.Println(matches)
+	// fmt.Println(len(ts))
+	fmt.Println(corner.id)
+	printTile(corner)
+	return corner
+}
 
 func readTiles(path string) stack {
 	b, _ := ioutil.ReadFile(path)
@@ -185,12 +200,16 @@ func main() {
 	path := "20_small.txt"
 	// path := "20.txt"
 	ts := readTiles(path)
+	// for _, t := range ts {
+		// fmt.Println(t.id, t.x, t.y)
+	// }
+	findCorner(ts)
 	// matched := 0
 	// fmt.Println(matched)
 	// ts[1951].Corner(ts)
 	// ts[2311].Corner(ts)
 	// fmt.Println(Part 1: cornerProduct(ts))
-	fitTile(ts[1951], ts[2311])
+	// fitTile(ts[1951], ts[2311])
 	// fitTile(ts[1951], ts[2729])
 	// ts[1951].Corner(ts)
 }
