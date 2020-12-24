@@ -43,6 +43,7 @@ func readTiles(path string) stack {
 }
 
 func printAryAry(a [][]string) {
+	fmt.Println()
 	for row := 0; row < len(a); row++ {
 		fmt.Println(a[row])
 	}
@@ -59,12 +60,11 @@ func rotateTileRight(t tile) tile {
 }
 
 func rotateImgRight(img [][]string) [][]string {
-	img2 := [][]string{}
-	imgSideLen := len(img)
-	img2 = initializeImage(img2, imgSideLen)
-	for row := imgSideLen - 1; row >= 0; row-- {
-		for col := 0; col < imgSideLen; col++ {
-			img2[(imgSideLen-1)-row][col] = img[(imgSideLen-1)-col][(imgSideLen-1)-row]
+	nRows, nCols := len(img), len(img[0])
+	img2 := initializeImage(nCols, nRows)
+	for row := nRows - 1; row >= 0; row-- {
+		for col := 0; col < nCols; col++ {
+			img2[(nCols-1)-col][row] = img[(nRows-1)-row][(nCols-1)-col]
 		}
 	}
 	return img2
@@ -81,12 +81,11 @@ func flipTileRight(t tile) tile {
 }
 
 func flipImgRight(img [][]string) [][]string {
-	img2 := [][]string{}
-	imgSideLen := len(img)
-	img2 = initializeImage(img, imgSideLen)
-	for row := 0; row < imgSideLen; row++ {
-		for col := 0; col < imgSideLen; col ++ {
-			img2[row][col] = img[row][(imgSideLen-1)-col]
+	nRows, nCols := len(img), len(img[0])
+	img2 := initializeImage(nRows, nCols)
+	for row := 0; row < nRows; row++ {
+		for col := 0; col < nCols; col++ {
+			img2[row][col] = img[row][(nCols-1)-col]
 		}
 	}
 	return img2
@@ -243,16 +242,27 @@ func printLayout(layout [][]int) {
 	}
 }
 
-func shrinkTile(t tile) [][]string {
-	t2 := [][]string{}
+func shrinkTile(t tile) [8][8]string {
+	var t2 [8][8]string
 	for row := 1; row < 9; row++ {
-		t2 = append(t2, []string{})
+		// t2 = append(t2, []string{})
 		for col := 1; col < 9; col++ {
-			t2[row-1] = append(t2[row-1], t.pat[row][col])
+			t2[row-1][col-1] = t.pat[row][col]
 		}
 	}
 	return t2
 }
+
+// func shrinkTile(t tile) [][]string {
+// 	t2 := [][]string{}
+// 	for row := 1; row < 9; row++ {
+// 		t2 = append(t2, []string{})
+// 		for col := 1; col < 9; col++ {
+// 			t2[row-1] = append(t2[row-1], t.pat[row][col])
+// 		}
+// 	}
+// 	return t2
+// }
 
 // Accepts an image, a tile shrunk to 8 by 8, and the row and column of that
 // tile in the tile layout.
@@ -267,10 +277,10 @@ func insertTile(img [][]string, st [][]string, lRow int, lCol int) [][]string {
 	return img
 }
 
-func initializeImage(img [][]string, imgSideLen int) [][]string {
-	for row := 0; row < imgSideLen; row++ {
-		img = append(img, []string{})
-		for col := 0; col < imgSideLen; col++ {
+func initializeImage(nRows int, nCols int) [][]string {
+	img := make([][]string, nRows)
+	for row := 0; row < nRows; row++ {
+		for col := 0; col < nCols; col++ {
 			img[row] = append(img[row], "x")
 		}
 	}
@@ -280,9 +290,8 @@ func initializeImage(img [][]string, imgSideLen int) [][]string {
 func assembleImage(layout [][]int, ts stack) [][]string {
 	layoutSideLen := len(layout)
 	imgSideLen := layoutSideLen * 8
-	img := [][]string{}
 	// Initialize image.
-	img = initializeImage(img, imgSideLen)
+	img := initializeImage(imgSideLen, imgSideLen)
 	// Adjoin shrunken tiles in the image.
 	for row := 0; row < layoutSideLen; row++ {
 		for col := 0; col < layoutSideLen; col++ {
@@ -294,17 +303,22 @@ func assembleImage(layout [][]int, ts stack) [][]string {
 }
 
 func patAtPoint(img [][]string, row int, col int) bool {
-	fmt.Println(row, col)
-	pat := [15]string{img[row][col], img[row+1][col+1], img[row+1][col+4], img[row][col+5], img[row][col+6], img[row+1][col+7], img[row+1][col+10], img[row][col+11], img[row][col+12], img[row+1][col+13], img[row+1][col+16], img[row][col+17], img[row-1][col+18], img[row][col+18], img[row][col+19]}
-	match := [15]string{"#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"} == pat
+	if len(img) < 3 || len(img[0]) < 20 {
+		return false
+	}
+	pat := [15]string{img[row+1][col], img[row+2][col+1], img[row+2][col+4], img[row+1][col+5], img[row+1][col+6], img[row+2][col+7], img[row+2][col+10], img[row+1][col+11], img[row+1][col+12], img[row+2][col+13], img[row+2][col+16], img[row+1][col+17], img[row][col+18], img[row+1][col+18], img[row+1][col+19]}
+	var match = [15]string{"#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"} == pat
 	return match
 }
 
 func numPats(img [][]string) int {
 	num := 0
-	for row := 1; row < len(img)-2; row++ {
-		for col := 0; col < len(img) - 21; col++ {
-			patAtPoint(img, row, col)
+	nRows, nCols := len(img), len(img[0])
+	for row := 0; row < nRows-2; row++ {
+		for col := 0; col < nCols-19; col++ {
+			if patAtPoint(img, row, col) {
+				num += 1
+			}
 		}
 	}
 	return num
@@ -314,17 +328,31 @@ func wherePatAt(img [][]string) int {
 	num := 0
 	for flip := 0; flip < 2; flip++ {
 		for rot := 0; rot < 4; rot++ {
-			// num = numPats(img)
-			// if num > 0 {
-				// return num
-			// }
-			fmt.Println("rotate")
+			num = numPats(img)
+			fmt.Println(flip, rot, "numPats", num)
+			if num > 0 {
+				return num
+			}
+			printAryAry(img)
 			img = rotateImgRight(img)
 		}
-		fmt.Println("flip")
 		img = flipImgRight(img)
 	}
 	return num
+}
+
+func imgsEqual(img1 [][]string, img2 [][]string) (bool, int, int) {
+	if !(len(img1) == len(img2)) || !(len(img1[0]) == len(img2[0])) {
+		return false, 0, 0
+	}
+	for i:=0;i<len(img1);i++{
+		for j:=0;j<len(img1);j++{
+			if !(img1[i][j] == img2[i][j]) {
+				return false, i, j
+			}
+		}
+	}
+	return true, 0, 0
 }
 
 func main() {
@@ -332,21 +360,42 @@ func main() {
 	path := "20_small.txt"
 	// path := "20.txt"
 	ts := readTiles(path)
-	// fmt.Println(ts)
 	layout := layoutTiles(ts)
 	img := assembleImage(layout, ts)
-	wherePatAt(img)
-	// fmt.Println(layout)		//0
-	// fmt.Println(numPats(img))
-	// img = rotateImgRight(img)	//1
-	// fmt.Println(numPats(img))
-	// img = rotateImgRight(img)	//2
-	// fmt.Println(numPats(img))
-	// img = rotateImgRight(img)	//3
-	// fmt.Println(numPats(img))
-	// img = rotateImgRight(img)	//0
-	// fmt.Println("flip")
-	// img = flipImgRight(img)
-	// fmt.Println(numPats(img))
+	fmt.Println(len(img), len(img[0]))
+	// printAryAry(img)
+	// img2 := flipImgRight(img)
+	// img2 = flipImgRight(img2)
+	// fmt.Println(imgsEqual(img, img2))
+	// smallImg := [][]string{[]string{".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."}, []string{".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "#", ".", ".", ".", ".", ".", "."}, []string{"#", ".", ".", ".", ".", "#", "#", ".", ".", ".", ".", "#", "#", ".", ".", ".", ".", "#", "#", "#", ".", ".", ".", ".", "."}, []string{".", "#", ".", ".", "#", ".", ".", "#", ".", ".", "#", ".", ".", "#", ".", ".", "#", ".", ".", ".", ".", ".", ".", ".", "."}, []string{".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."}}
+	// printAryAry(smallImg)
+	// printAryAry(flipImgRight(smallImg))
+	// fmt.Println("patAtPoint(smallImg, 1, 0))", patAtPoint(smallImg, 1, 0))
+	// fmt.Println(wherePatAt(smallImg))
+	// fmt.Println(wherePatAt(img2))
+	// img2 = flipImgRight(img2)
+	// img2 := initializeSquareImage(len(img))
+	// printAryAry(img2)
+	// fmt.Println("img")
+	// printAryAry(img)
+	// fmt.Println("img2")
+	// printAryAry(img2)
+	// wherePatAt(img)
 	// fmt.Println("Part 1:", cornerProduct(layout))
 }
+
+/*
+0123456789abcdefghij
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   
+
+10 21 24 15 16 27 
+
+2a 1b 1c 2d 
+
+2g 1h 0i 1i 1j
+
+[15]string{img[row+1][col], img[row+2][col+1], img[row+2][col+4], img[row+1][col+5], img[row+1][col+6], img[row+2][col+7], img[row+2][col+10], img[row+1][col+11], img[row+1][col+12], img[row+2][col+13], img[row+2][col+16], img[row+1][col+17], img[row][col+18], img[row+1][col+18], img[row+1][col+19]}
+
+*/
