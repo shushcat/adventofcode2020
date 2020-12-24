@@ -58,6 +58,18 @@ func rotateTileRight(t tile) tile {
 	return t2
 }
 
+func rotateImgRight(img [][]string) [][]string {
+	img2 := [][]string{}
+	imgSideLen := len(img)
+	img2 = initializeImage(img2, imgSideLen)
+	for row := imgSideLen - 1; row >= 0; row-- {
+		for col := 0; col < imgSideLen; col++ {
+			img2[(imgSideLen-1)-row][col] = img[(imgSideLen-1)-col][(imgSideLen-1)-row]
+		}
+	}
+	return img2
+}
+
 func flipTileRight(t tile) tile {
 	t2 := tile{t.x, t.y, t.id, [10][10]string{}}
 	for row := 0; row < 10; row++ {
@@ -66,6 +78,18 @@ func flipTileRight(t tile) tile {
 		}
 	}
 	return t2
+}
+
+func flipImgRight(img [][]string) [][]string {
+	img2 := [][]string{}
+	imgSideLen := len(img)
+	img2 = initializeImage(img, imgSideLen)
+	for row := 0; row < imgSideLen; row++ {
+		for col := 0; col < imgSideLen; col ++ {
+			img2[row][col] = img[row][(imgSideLen-1)-col]
+		}
+	}
+	return img2
 }
 
 // Returns a string holding the characters of a given edge, joined in order
@@ -243,18 +267,23 @@ func insertTile(img [][]string, st [][]string, lRow int, lCol int) [][]string {
 	return img
 }
 
-func assembleImage(layout [][]int, ts stack) [][]string {
-	layoutSideLen := len(layout)
-	imgSideLen := layoutSideLen * 8
-	img := [][]string{}
-	// Initialize image.
+func initializeImage(img [][]string, imgSideLen int) [][]string {
 	for row := 0; row < imgSideLen; row++ {
 		img = append(img, []string{})
 		for col := 0; col < imgSideLen; col++ {
 			img[row] = append(img[row], "x")
 		}
 	}
-	// Place shrunken tiles in the image.
+	return img
+}
+
+func assembleImage(layout [][]int, ts stack) [][]string {
+	layoutSideLen := len(layout)
+	imgSideLen := layoutSideLen * 8
+	img := [][]string{}
+	// Initialize image.
+	img = initializeImage(img, imgSideLen)
+	// Adjoin shrunken tiles in the image.
 	for row := 0; row < layoutSideLen; row++ {
 		for col := 0; col < layoutSideLen; col++ {
 			tileID := layout[row][col]
@@ -264,8 +293,38 @@ func assembleImage(layout [][]int, ts stack) [][]string {
 	return img
 }
 
-func patAtPoint() {
-	panic // TODO Here's where it goes.
+func patAtPoint(img [][]string, row int, col int) bool {
+	fmt.Println(row, col)
+	pat := [15]string{img[row][col], img[row+1][col+1], img[row+1][col+4], img[row][col+5], img[row][col+6], img[row+1][col+7], img[row+1][col+10], img[row][col+11], img[row][col+12], img[row+1][col+13], img[row+1][col+16], img[row][col+17], img[row-1][col+18], img[row][col+18], img[row][col+19]}
+	match := [15]string{"#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"} == pat
+	return match
+}
+
+func numPats(img [][]string) int {
+	num := 0
+	for row := 1; row < len(img)-2; row++ {
+		for col := 0; col < len(img) - 21; col++ {
+			patAtPoint(img, row, col)
+		}
+	}
+	return num
+}
+
+func wherePatAt(img [][]string) int {
+	num := 0
+	for flip := 0; flip < 2; flip++ {
+		for rot := 0; rot < 4; rot++ {
+			// num = numPats(img)
+			// if num > 0 {
+				// return num
+			// }
+			fmt.Println("rotate")
+			img = rotateImgRight(img)
+		}
+		fmt.Println("flip")
+		img = flipImgRight(img)
+	}
+	return num
 }
 
 func main() {
@@ -275,6 +334,19 @@ func main() {
 	ts := readTiles(path)
 	// fmt.Println(ts)
 	layout := layoutTiles(ts)
-	assembleImage(layout, ts)
+	img := assembleImage(layout, ts)
+	wherePatAt(img)
+	// fmt.Println(layout)		//0
+	// fmt.Println(numPats(img))
+	// img = rotateImgRight(img)	//1
+	// fmt.Println(numPats(img))
+	// img = rotateImgRight(img)	//2
+	// fmt.Println(numPats(img))
+	// img = rotateImgRight(img)	//3
+	// fmt.Println(numPats(img))
+	// img = rotateImgRight(img)	//0
+	// fmt.Println("flip")
+	// img = flipImgRight(img)
+	// fmt.Println(numPats(img))
 	// fmt.Println("Part 1:", cornerProduct(layout))
 }
