@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"sort"
 )
 
 type allergins map[string][]string
@@ -42,7 +43,6 @@ func readFoods(path string) (allergins, foods) {
 			fa[1] = strings.TrimSuffix(fa[1], ")")
 			fa[1] = strings.ReplaceAll(fa[1], ",", "")
 			foodAry := strings.Split(fa[0], " ")
-			// fs = union(fs, foodAry)
 			fs = fs.Tally(foodAry)
 			allerginAry := strings.Split(fa[1], " ")
 			for _, a := range allerginAry {
@@ -117,13 +117,15 @@ func tests() {
 	s2 := []string{"e","c","z","u"}
 	fmt.Println(intersection(s1,s2))
 	fmt.Println(union(s1,s2))
-	// fmt.Println(rm(s1, 2))
 	s3 := []string{"self"}
 	s4 := []string{"self"}
 	fmt.Println(intersection(s3,s4))
 	fmt.Println(complement(s1, s2))
 	s5 := []string{"a","f","e","c","h", "w"}
 	fmt.Println(complement(s1, s5))
+	s6 := []string{"z","v","x","g","c"}
+	sort.Strings(s6)
+	fmt.Println(s6)
 }
 
 func numHypoallergenic(fs foods, as allergins) int {
@@ -141,10 +143,24 @@ func numHypoallergenic(fs foods, as allergins) int {
 	return num
 }
 
+func alphabetizeAllergenicSnax(as allergins) string {
+	var alphal []string
+	for k, _ := range as {
+		alphal = append(alphal, k)
+	}
+	sort.Strings(alphal)
+	var badSnax []string
+	for i:=0;i<len(alphal);i++{
+		badSnax = append(badSnax, as[alphal[i]][0])
+	}
+	return strings.Join(badSnax, ",")
+}
+
 func main() {
 	// path := "21_small.txt"
 	path := "21.txt"
 	as, fs := readFoods(path)
 	as = pruneAllergins(as)
 	fmt.Println("Part 1:", numHypoallergenic(fs, as))
+	fmt.Println("Part 2:", alphabetizeAllergenicSnax(as))
 }
