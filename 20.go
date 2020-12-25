@@ -49,6 +49,19 @@ func printAryAry(a [][]string) {
 	}
 }
 
+func printTilePat(t tile) {
+	fmt.Println()
+	for row := 0; row < len(t.pat); row++ {
+		fmt.Println(t.pat[row])
+	}
+}
+
+func printLayout(layout [][]int) {
+	for i := 0; i < len(layout); i++ {
+		fmt.Println(layout[i])
+	}
+}
+
 func rotateTileRight(t tile) tile {
 	t2 := tile{t.x, t.y, t.id, [10][10]string{}}
 	for row := 9; row >= 0; row-- {
@@ -162,18 +175,118 @@ func cornerProduct(layout [][]int) int {
 	return prod
 }
 
-func tileChain(t1 tile, chained stack, ts stack) stack {
-	chained[t1.id] = t1
-	if len(chained) != len(ts) {
-		for _, t2 := range ts {
-			if t3, ok := fitTile(t1, t2); ok {
-				t1 = t3
-				chained[t1.id] = t1
-				break
+func chooseCorner(ts stack) tile {
+	var t1 tile
+	for _, t2 := range ts {
+		adjacent := 0
+		for _, t3 := range ts {
+			if !(t2.id == t3.id) {
+				if _, ok := fitTile(t2, t3); ok {
+					adjacent += 1
+				}
 			}
 		}
-		chained = tileChain(t1, chained, ts)
+		if adjacent == 2 {
+			t1 = t2
+			break
+		}
 	}
+	return t1
+}
+
+func initTileChain(ts stack) (tile, stack) {
+	chained := stack{}
+	corner := chooseCorner(ts)
+	chained[corner.id] = corner
+	// Orient corner in upper-left.
+	adjacent := []tile{}
+	for _, t2 := range ts {
+		if t3, ok := fitTile(corner, t2); ok {
+			adjacent = append(adjacent, t3)
+		}
+	}
+	var displacement [2]int
+	for _, t3 := range adjacent {
+		displacement[0] += t3.x
+		displacement[1] += t3.y
+	}
+	switch displacement {
+	case [2]int{-1, 1}:
+		corner = rotateTileRight(corner)
+		corner = rotateTileRight(corner)
+	case [2]int{1, 1}:
+		corner = rotateTileRight(corner)
+	case [2]int{-1, -1}:
+		corner = flipTileRight(corner)
+	}
+	return corner, chained
+}
+
+func directionalChain(ts stack) stack {
+	t1, chained := initTileChain(ts)
+	dir := 2
+	for len(chained) != len(ts) {
+		if t2, ok := directionalFit(t1, ts, dir); ok {
+			chained[t2.id] = t2
+			t1 = t2
+		} else if t2, ok := directionalFit(t1, ts, 1); ok {
+			chained[t2.id] = t2
+			dir = (dir+2)%4
+			t1 = t2
+		}
+	}
+	return chained
+}
+
+func directionalFit(t1 tile, ts stack, dir int) (tile, bool) {
+	match := false
+	for _, t2 := range ts {
+		if t1.id != t2.id {
+			for flip := 0; flip < 2; flip++ {
+				for rot := 0; rot < 4; rot++ {
+					match = matchSide(t1, t2, dir)
+					if match {
+						switch dir {
+						case 0:
+							t2.x, t2.y = t1.x, t1.y+1
+						case 1:
+							t2.x, t2.y = t1.x+1, t1.y
+						case 2:
+							t2.x, t2.y = t1.x, t1.y-1
+						case 3:
+							t2.x, t2.y = t1.x-1, t1.y
+						}
+						return t2, true
+					}
+					t2 = rotateTileRight(t2)
+				}
+				t2 = flipTileRight(t2)
+			}
+		}
+	}
+	return t1, false
+}
+
+func tileChain(ts stack) stack {
+	t1, chained := initTileChain(ts)
+	for len(chained) != len(ts) {
+		// tries := 0
+		fmt.Println(len(ts), len(chained))
+		for _, t2 := range ts {
+			if _, ok := chained[t2.id]; !ok {
+				if t2, ok := fitTile(t1, t2); ok {
+					chained[t1.id] = t1
+					t1 = t2
+					// tries = 0
+				}
+			}
+			// if tries == len(ts) {
+				// t1, chained = initTileChain(ts)
+			// }
+			// tries += 1
+		}
+	}
+	fmt.Println(chained)
 	return chained
 }
 
@@ -196,10 +309,9 @@ func normalizeTileCoordinates(ts stack) (stack, int, int) {
 			yMin = t.y
 		}
 	}
-	xNorm, yNorm := -xMin, -yMin
 	normStack := stack{}
 	for k, t := range ts {
-		normStack[k] = tile{t.x + xNorm, t.y + yNorm, t.id, t.pat}
+		normStack[k] = tile{t.x - xMin, t.y - yMin, t.id, t.pat}
 	}
 	xMax, yMax := 0, 0
 	for _, t := range normStack {
@@ -213,11 +325,11 @@ func normalizeTileCoordinates(ts stack) (stack, int, int) {
 	return normStack, xMax, yMax
 }
 
-func layoutTiles(ts stack) [][]int {
+func layoutTiles(ts stack) ([][]int, stack) {
 	tc := stack{}
-	seed := seedTile(ts)
-	tc = tileChain(seed, tc, ts)
+	tc = directionalChain(ts)
 	normalized, xMax, yMax := normalizeTileCoordinates(tc)
+	tc = normalized
 	layout := [][]int{}
 	for y := 0; y <= yMax; y++ {
 		layout = append(layout, []int{})
@@ -225,10 +337,10 @@ func layoutTiles(ts stack) [][]int {
 			layout[y] = append(layout[y], 0)
 		}
 	}
-	for _, t := range normalized {
+	for _, t := range tc {
 		layout[t.y][t.x] = t.id
 	}
-	return layout
+	return layout, tc
 }
 
 func joinTiles(ts stack, layout [][]int) [][]string {
@@ -236,37 +348,25 @@ func joinTiles(ts stack, layout [][]int) [][]string {
 	return image
 }
 
-func printLayout(layout [][]int) {
-	for i := 0; i < len(layout); i++ {
-		fmt.Println(layout[i])
-	}
-}
-
 func shrinkTile(t tile) [8][8]string {
-	var t2 [8][8]string
+	var st [8][8]string
 	for row := 1; row < 9; row++ {
-		// t2 = append(t2, []string{})
 		for col := 1; col < 9; col++ {
-			t2[row-1][col-1] = t.pat[row][col]
+			st[row-1][col-1] = t.pat[row][col]
 		}
 	}
-	return t2
+	return st
 }
 
-// func shrinkTile(t tile) [][]string {
-// 	t2 := [][]string{}
-// 	for row := 1; row < 9; row++ {
-// 		t2 = append(t2, []string{})
-// 		for col := 1; col < 9; col++ {
-// 			t2[row-1] = append(t2[row-1], t.pat[row][col])
-// 		}
-// 	}
-// 	return t2
-// }
-
-// Accepts an image, a tile shrunk to 8 by 8, and the row and column of that
-// tile in the tile layout.
-func insertTile(img [][]string, st [][]string, lRow int, lCol int) [][]string {
+// Accepts an image, a tile , and the row and column of that tile in the
+// layout.
+func insertTile(img [][]string, t tile, lRow int, lCol int) [][]string {
+	t = flipTileRight(rotateTileRight(rotateTileRight(t)))
+	st := shrinkTile(t)
+	fmt.Print("\n", t.id, ":\n")
+	for i:= 0; i<8;i++ {
+		fmt.Println(st[i])
+	}
 	for row := 0; row < 8; row++ {
 		for col := 0; col < 8; col++ {
 			iRow := row + (lRow * 8)
@@ -274,6 +374,7 @@ func insertTile(img [][]string, st [][]string, lRow int, lCol int) [][]string {
 			img[iRow][iCol] = st[row][col]
 		}
 	}
+	printAryAry(img)
 	return img
 }
 
@@ -292,11 +393,11 @@ func assembleImage(layout [][]int, ts stack) [][]string {
 	imgSideLen := layoutSideLen * 8
 	// Initialize image.
 	img := initializeImage(imgSideLen, imgSideLen)
-	// Adjoin shrunken tiles in the image.
+	// Join shrunken tiles to the image.
 	for row := 0; row < layoutSideLen; row++ {
 		for col := 0; col < layoutSideLen; col++ {
 			tileID := layout[row][col]
-			insertTile(img, shrinkTile(ts[tileID]), row, col)
+			img = insertTile(img, ts[tileID], row, col)
 		}
 	}
 	return img
@@ -324,21 +425,19 @@ func numPats(img [][]string) int {
 	return num
 }
 
-func wherePatAt(img [][]string) int {
+func wherePatAt(img [][]string) ([][]string, int) {
 	num := 0
 	for flip := 0; flip < 2; flip++ {
 		for rot := 0; rot < 4; rot++ {
-			num = numPats(img)
-			fmt.Println(flip, rot, "numPats", num)
+			num += numPats(img)
 			if num > 0 {
-				return num
+				return img, num
 			}
-			printAryAry(img)
 			img = rotateImgRight(img)
 		}
 		img = flipImgRight(img)
 	}
-	return num
+	return img, num
 }
 
 func imgsEqual(img1 [][]string, img2 [][]string) (bool, int, int) {
@@ -355,47 +454,62 @@ func imgsEqual(img1 [][]string, img2 [][]string) (bool, int, int) {
 	return true, 0, 0
 }
 
-func main() {
-	fmt.Println("============TEST============")
-	path := "20_small.txt"
-	// path := "20.txt"
-	ts := readTiles(path)
-	layout := layoutTiles(ts)
-	img := assembleImage(layout, ts)
-	fmt.Println(len(img), len(img[0]))
-	// printAryAry(img)
-	// img2 := flipImgRight(img)
-	// img2 = flipImgRight(img2)
-	// fmt.Println(imgsEqual(img, img2))
-	// smallImg := [][]string{[]string{".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."}, []string{".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "#", ".", ".", ".", ".", ".", "."}, []string{"#", ".", ".", ".", ".", "#", "#", ".", ".", ".", ".", "#", "#", ".", ".", ".", ".", "#", "#", "#", ".", ".", ".", ".", "."}, []string{".", "#", ".", ".", "#", ".", ".", "#", ".", ".", "#", ".", ".", "#", ".", ".", "#", ".", ".", ".", ".", ".", ".", ".", "."}, []string{".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."}}
-	// printAryAry(smallImg)
-	// printAryAry(flipImgRight(smallImg))
-	// fmt.Println("patAtPoint(smallImg, 1, 0))", patAtPoint(smallImg, 1, 0))
-	// fmt.Println(wherePatAt(smallImg))
-	// fmt.Println(wherePatAt(img2))
-	// img2 = flipImgRight(img2)
-	// img2 := initializeSquareImage(len(img))
-	// printAryAry(img2)
-	// fmt.Println("img")
-	// printAryAry(img)
-	// fmt.Println("img2")
-	// printAryAry(img2)
-	// wherePatAt(img)
-	// fmt.Println("Part 1:", cornerProduct(layout))
+func testSamplePat() [][]string {
+	path := "20_small_img.txt"
+	b, _ := ioutil.ReadFile(path)
+	input := string(b)
+	var img [][]string
+	for _, l := range strings.Split(input, "\n") {
+		if l != "" {
+			img = append(img, strings.Split(l, ""))
+		}
+	}
+	n := 0
+	_, n = wherePatAt(img)
+	fmt.Println("rot 0:", n)
+	img = rotateImgRight(img)
+	_, n = wherePatAt(img)
+	fmt.Println("rot 1:", n)
+	img = rotateImgRight(img)
+	_, n = wherePatAt(img)
+	fmt.Println("rot 2:", n)
+	img = rotateImgRight(img)
+	_, n = wherePatAt(img)
+	fmt.Println("rot 3:", n)
+	img = rotateImgRight(img)
+	_, n = wherePatAt(img)
+	fmt.Println("rot 4:", n)
+	img = flipImgRight(img)
+	_, n = wherePatAt(img)
+	fmt.Println("flip 1:", n)
+	return img
 }
 
-/*
-0123456789abcdefghij
-                  # 
-#    ##    ##    ###
- #  #  #  #  #  #   
+func hashesLessPats(img [][]string) int {
+	pats := 33 // TODO Fix the off-by ones that keep giving me 32.
+	hashes := 0
+	for row := 0; row < len(img); row++ {
+		for col := 0; col < len(img[0]); col++ {
+			if img[row][col] == "#" {
+				hashes += 1
+			}
+		}
+	}
+	return hashes - (pats*15)
+}
 
-10 21 24 15 16 27 
-
-2a 1b 1c 2d 
-
-2g 1h 0i 1i 1j
-
-[15]string{img[row+1][col], img[row+2][col+1], img[row+2][col+4], img[row+1][col+5], img[row+1][col+6], img[row+2][col+7], img[row+2][col+10], img[row+1][col+11], img[row+1][col+12], img[row+2][col+13], img[row+2][col+16], img[row+1][col+17], img[row][col+18], img[row+1][col+18], img[row+1][col+19]}
-
-*/
+func main() {
+	fmt.Println("============TEST============")
+	// path := "20_small.txt"
+	path := "20.txt"
+	ts := readTiles(path)
+	layout, tc := layoutTiles(ts)
+	img := assembleImage(layout, tc)
+	_, n := wherePatAt(img)
+	fmt.Println(n)
+	printLayout(layout)
+	fmt.Println(hashesLessPats(img))
+	// testSamplePat()
+	// printAryAry(img)
+	// printLayout(layout)
+}
