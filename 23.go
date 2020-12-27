@@ -10,103 +10,112 @@ import (
 	"flag"
 )
 
-type cup struct {
-	prev *cup
-	val  int
-	next *cup
-}
-
-type cups struct {
-	head *cup
-	tail *cup
-}
-
-func initCups() *cups { return &cups{} }
-
-func (cs *cups) Populate(s string) {
-	ia := str2IntAry(s)
-	for i := 0; i < len(ia); i++ {
-		cs.addCup(ia[i])
+func populate(s string) map[int]int{
+	ia := strings.Split(s, "")
+	cs := make(map[int]int, len(ia))
+	for i := 0; i< len(ia)-1;i++{
+		d1, _ := strconv.Atoi(ia[i])
+		d2, _ := strconv.Atoi(ia[i+1])
+		cs[d1]=d2
 	}
+	return cs
 }
 
-func (cs *cups) bigPopulate(s string) {
-	ia := str2IntAry(s)
-	for i := 0; i < len(ia); i++ {
-		cs.addCup(ia[i])
+func bigPopulate(s string) map[int]int {
+	ia := strings.Split(s, "")
+	cs := make(map[int]int, len(ia))
+	for i := 0; i< len(ia)-1;i++{
+		d1, _ := strconv.Atoi(ia[i])
+		d2, _ := strconv.Atoi(ia[i+1])
+		cs[d1]=d2
 	}
-	for val:=10; val<=1000000;val++{
-		cs.addCup(val)
+	for i:=10; i<=1000000;i++{
+		cs[i]=i
 	}
+	return cs
 }
 
-func (cs *cups) addCup(n int) {
-	c := &cup{val: n}
-	if cs.head == nil {
-		cs.head = c
-	} else {
-		cur := cs.tail
-		cur.next = c
-		c.prev = cs.tail
+func step(cs map[int]int) map[int]int {
+	head, tail := head(cs), tail(cs)
+	cur := head
+	des := setDes(cur)
+	hBeg, hEnd := cs[cur], cs[cs[cs[cur]]]
+	cur = cs[hEnd]
+	for {
+		if cur == des {
+			if cur != tail {
+				cs[hEnd] = cs[des]
+				cs[tail] = head
+			} else {
+				cs[hEnd] = head
+			}
+			cs[des] = hBeg
+			delete(cs, head)
+			break
+		} else if cur == tail {
+			cur = cs[hEnd]
+			des = setDes(des)
+		} else {
+			cur = cs[cur]
+		}
 	}
-	cs.tail = c
+	return cs
 }
 
-func (cs *cups) printCups() {
-	cur := cs.head
-	fmt.Println("==============Cups==============")
-	fmt.Println(*cur)
-	for cur.next != nil {
-		cur = cur.next
-		fmt.Println(*cur)
-	}
-	fmt.Println("================================")
-}
-
-func (cs *cups) step() {
-	cur := cs.head
+func setDes(n int) int {
 	des := 0
-	if cur.val > 1 {
-		des = cur.val - 1
+	if n > 1 {
+		des = n - 1
 	} else {
 		des = 9
 	}
-	heldBeg, heldEnd := cur.next, ((cur.next).next).next
-	cs.tail, cs.head = cur, heldEnd.next
-	(cs.head).prev, (cs.tail).next = nil, nil
-	cur = cs.head
-	for {
-		if cur.val == des {
-			heldEnd.next = cur.next
-			if cur.next != nil {
-				(cur.next).prev = heldEnd
-			}
-			cur.next = heldBeg
-			heldBeg.prev = cur
-			break
-		} else if cur.next == nil {
-			cur = cs.head
-			if des > 1 {
-				des = des - 1
-			} else {
-				des = 9
-			}
-		} else {
-			cur = cur.next
-		}
-	}
-	cur = cs.head
-	for cur.next != nil {
-		cur = cur.next
-	}
-	cur.next = cs.tail
-	(cs.tail).prev = cur
+	return des
 }
 
-func (cs *cups) nSteps(n int) {
+func nSteps(cs map[int]int, n int) {
 	for i := 0; i < n; i++ {
-		cs.step()
+		fmt.Println("Step", i+1)
+		cs = step(cs)
 	}
+}
+
+func head(cs map[int]int) int {
+	refd := make(map[int]bool)
+	head := 0
+	for _, v := range cs {
+		refd[v] = true
+	}
+	for k, _ := range cs {
+		if !(refd[k]) {
+			head = k
+			break
+		}
+	}
+	return head
+}
+
+func tail(cs map[int]int) int {
+	refd := make(map[int]bool)
+	tail := 0
+	for k, _ := range cs {
+		refd[k] = true
+	}
+	for _, v := range cs {
+		if !(refd[v]) {
+			tail = v
+			break
+		}
+	}
+	return tail
+}
+
+func printCups(cs map[int]int) {
+	cur := head(cs)
+	for i:=0;i<=len(cs);i++ {
+		fmt.Print(cur)
+		cur = cs[cur]
+	}
+	fmt.Print("\n")
 }
 
 func has(a []int, n int) bool {
@@ -138,47 +147,15 @@ func min(a []int) int {
 	return m
 }
 
-func str2IntAry(s string) []int {
-	sa := strings.Split(s, "")
-	ia := make([]int, len(sa))
-	for i := 0; i < len(sa); i++ {
-		ia[i], _ = strconv.Atoi(sa[i])
-	}
-	return ia
-}
-
-func pickDes(rem []int, cur int) (int, int) {
-	cur = cur - 1
-	des := 0
-	max, min := max(rem), min(rem)
-	for des == 0 {
-		if cur < min {
-			des = max
-		} else if has(rem, cur) {
-			des = cur
-		} else {
-			cur = cur - 1
-		}
-	}
-	i := 0
-	for j := 0; j < len(rem); j++ {
-		if rem[j] == des {
-			i = j
-			break
-		}
-	}
-	return des, i
-}
-
-func p1Str(cs *cups) string {
+func p1Str(cs map[int]int) string {
 	var str string
-	cur := cs.head
+	cur, tail := head(cs), tail(cs)
 	for {
-		str = str + strconv.FormatInt(int64(cur.val), 10)
-		if cur.next == nil {
+		str = str + strconv.FormatInt(int64(cur), 10)
+		if cur == tail {
 			break
 		}
-		cur = cur.next
+		cur = cs[cur]
 	}
 	a := strings.Split(str, "1")
 	str = a[1] + a[0]
@@ -197,24 +174,14 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
-
 	input := "389125467" // Sample
+	// input := "289154673" // Sample
 	// input := "837419265" // Sample
 	// input := "398254716" // Personal
-	cs := initCups()
-	// cs.Populate(input)
-	cs.bigPopulate(input)
-	cs.nSteps(10)
-	fmt.Println(cs.tail)
-	// fmt.Println("Part 1:", p1Str(cs))
-	// cs.printCups()
-	// cs.Populate(input)
-	// fmt.Println(input)
-	// m1 := moveCups(input)
-	// moveCups(input)
-	// m1 := moveCups(input)
-	// fmt.Println(m1)
-	// m2 := moveCups(m1)
-	// fmt.Println(m2)
-
+	cs1 := populate(input)
+	nSteps(cs1, 100)
+	fmt.Println("Part 1:", p1Str(cs1))	// -> 45798623
+	cs2 := bigPopulate(input)
+	nSteps(cs2, 10)
+	fmt.Println(cs2[1])
 }
