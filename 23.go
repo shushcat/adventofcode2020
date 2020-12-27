@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"log"
 	"strconv"
 	"strings"
+	"runtime/pprof"
+	"flag"
 )
 
 type cup struct {
@@ -23,6 +27,16 @@ func (cs *cups) Populate(s string) {
 	ia := str2IntAry(s)
 	for i := 0; i < len(ia); i++ {
 		cs.addCup(ia[i])
+	}
+}
+
+func (cs *cups) bigPopulate(s string) {
+	ia := str2IntAry(s)
+	for i := 0; i < len(ia); i++ {
+		cs.addCup(ia[i])
+	}
+	for val:=10; val<=1000000;val++{
+		cs.addCup(val)
 	}
 }
 
@@ -90,12 +104,10 @@ func (cs *cups) step() {
 }
 
 func (cs *cups) nSteps(n int) {
-	for i:= 0; i<n;i++{
+	for i := 0; i < n; i++ {
 		cs.step()
 	}
 }
-
-// need traverse function
 
 func has(a []int, n int) bool {
 	for i := 0; i < len(a); i++ {
@@ -173,16 +185,29 @@ func p1Str(cs *cups) string {
 	return str
 }
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
-	// input := "389125467" // Sample
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
+	input := "389125467" // Sample
 	// input := "837419265" // Sample
-	input := "398254716"	// Personal
+	// input := "398254716" // Personal
 	cs := initCups()
-	cs.Populate(input)
-	fmt.Println(input)
-	cs.nSteps(100)
-	fmt.Println("Part 1:", p1Str(cs))
-	cs. printCups()
+	// cs.Populate(input)
+	cs.bigPopulate(input)
+	cs.nSteps(10)
+	fmt.Println(cs.tail)
+	// fmt.Println("Part 1:", p1Str(cs))
+	// cs.printCups()
 	// cs.Populate(input)
 	// fmt.Println(input)
 	// m1 := moveCups(input)
