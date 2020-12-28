@@ -43,8 +43,8 @@ func populate(input string, size int) *cups {
 		cs.max = size
 		for i:= 10; i<size;i++{
 			cs.m[i]=i+1
-			last = i
 		}
+		last = size
 	}
 	cs.m[last] = cs.h
 	return cs
@@ -115,6 +115,13 @@ func p2Prod(cs *cups) int {
 	return prod
 }
 
+// Output a file to be read by the `pprof` tool with the command `go run 23.go
+// -cpuprofile=23.prof`, then examine the file with `go tool pprof 23.prof`.
+// The `pprof` commands I found most useful while optimizing this program were
+// `top10` (to see the ten functions that consumed the most CPU time), `list`
+// followed by a regex (to examine a matched function line-by-line), and `web`
+// to view a profiling graph in a web browser.
+
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
@@ -127,13 +134,10 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
-	fmt.Println("=============================")
-	fmt.Println("============TEST=============")
-	fmt.Println("=============================\n")
-	input := "389125467" // Sample
+	// input := "389125467" // Sample
 	// input := "289154673" // Sample
 	// input := "837419265" // Sample
-	// input := "398254716" // Personal
+	input := "398254716" // Personal
 	// cs1 := populate(input)
 	// printCups(cs1)
 	// cs1.nSteps(100)
@@ -142,11 +146,8 @@ func main() {
 	cs1.play(100)
 	fmt.Println("Part 1:", p1Str(cs1))
 
-	cs2 := populate(input, 9)
+	cs2 := populate(input, 1_000_000)
 	cs2.play(10_000_000)
 	fmt.Println("Part 2:", p2Prod(cs2))
 
-	fmt.Println(cs2.m[1])
-
-	fmt.Println("done")
 }
