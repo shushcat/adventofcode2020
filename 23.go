@@ -11,7 +11,7 @@ import (
 )
 
 type cups struct {
-	h, t int
+	h int
 	m    []int
 	max  int
 }
@@ -31,97 +31,57 @@ func populate(input string, size int) *cups {
 	cs := &cups{}
 	cs.m = make([]int, size+1)
 	cs.h = ia[0]
+	cs.max = 9
 	for i := 0; i < len(ia)-1; i++ {
 		d1, d2 := ia[i], ia[i+1]
 		cs.m[d1] = d2
 	}
-	cs.setTail()
+	last := ia[len(ia)-1]
 	if size > 9 {
-		cs.m[cs.t] = 10
+		cs.m[last] = 10
+		last = 10
+		cs.max = size
 		for i:= 10; i<size;i++{
 			cs.m[i]=i+1
+			last = i
 		}
-		cs.t = size
-		cs.m[size] = 0
 	}
+	cs.m[last] = cs.h
 	return cs
 }
 
-func (cg *cups) Play(rounds int) {
+func (cs *cups) play(rounds int) {
 	for {
-		// Take three cups
-		cup1 := cg.m[cg.h]
-		cup2 := cg.m[cup1]
-		cup3 := cg.m[cup2]
-		after := cg.m[cup3]
 
-		destination := setDes(cg.h)
+		// Three cups
+		cup1 := cs.m[cs.h]
+		cup2 := cs.m[cup1]
+		cup3 := cs.m[cup2]
+		post := cs.m[cup3]
 
-		// Remove the three cups
-		cg.m[cg.h] = after
-
-		// Insert them after the destination
-		fmt.Println(cg.m)
-		oldDestValue := cg.m[destination]
-		cg.m[destination] = cup1
-		cg.m[cup3] = oldDestValue
-
-		cg.h = after
-
-	}
-}
-
-func (cs *cups) step() {
-	head, tail := cs.h, cs.t
-	cur, des := head, head-1
-	hBeg, hEnd := cs.m[cur], cs.m[cs.m[cs.m[cur]]]
-	cur, cs.h = cs.m[hEnd], cs.m[hEnd]
-	for {
-		if cur == des {
-			if cur != tail {
-				cs.m[hEnd] = cs.m[des]
-				cs.m[cs.t] = head
-			} else {
-				cs.m[hEnd] = head
-			}
-			cs.t = head
-			cs.m[des] = hBeg
-			cs.m[head] = 0
-			break
-		} else if cur == tail {
-			cur = cs.m[hEnd]
-			des = setDes(des)
-		} else {
-			cur = cs.m[cur]
+		dest := cs.h - 1
+		if dest < 1 {
+			dest = cs.max
 		}
-		// rounds--
-		// if rounds == 0 {
-		// break
-		// }
-	}
-}
+		for cup1 == dest || cup2 == dest || cup3 == dest {
+		dest--
+			if dest < 1 {
+				dest = cs.max
+			}
+		}
 
-func setDes(n int) int {
-	des := 0
-	if n > 1 {
-		des = n - 1
-	} else {
-		des = 1000000
-	}
-	return des
-}
+		// Remove cups
+		cs.m[cs.h] = post
 
-func (cs *cups) nSteps(n int) {
-	for i := 0; i < n; i++ {
-		fmt.Println("Step", i+1)
-		cs.step()
-	}
-}
+		// Insert them
+		oldDestVal := cs.m[dest]
+		cs.m[dest] = cup1
+		cs.m[cup3] = oldDestVal
 
-func (cs *cups) setTail() {
-	for k := 1; k < len(cs.m); k++ {
-		if cs.m[k] == 0 {
-			cs.t = k
+		cs.h = post
+
+		rounds--
+		if rounds == 0 {
 			break
 		}
 	}
@@ -139,23 +99,19 @@ func printCups(cs *cups) {
 func p1Str(cs *cups) string {
 	var str string
 	cur := cs.h
-	for {
-		str = str + strconv.FormatInt(int64(cur), 10)
-		if cur == cs.t {
-			break
-		}
+	for i := 1; i <= len(cs.m)-1; i++ {
+		d := strconv.FormatInt(int64(cur), 10)
+		str = str + d
 		cur = cs.m[cur]
 	}
-	a := strings.Split(str, "1")
-	str = a[1] + a[0]
-	return str
+	sa := strings.Split(str, "1")
+	return sa[1]+sa[0]
 }
 
 func p2Prod(cs *cups) int {
 	n1 := cs.m[1]
 	n2 := cs.m[n1]
 	prod := n1 * n2
-	fmt.Println(n1, "*", n2)
 	return prod
 }
 
@@ -171,6 +127,9 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
+	fmt.Println("=============================")
+	fmt.Println("============TEST=============")
+	fmt.Println("=============================\n")
 	input := "389125467" // Sample
 	// input := "289154673" // Sample
 	// input := "837419265" // Sample
@@ -178,28 +137,16 @@ func main() {
 	// cs1 := populate(input)
 	// printCups(cs1)
 	// cs1.nSteps(100)
-	// fmt.Println("Part 1:", p1Str(cs1))
 
-	// cs2 := bigPopulate(input)
+	cs1 := populate(input, 9)
+	cs1.play(100)
+	fmt.Println("Part 1:", p1Str(cs1))
 
-	cs1 := populate(input, 100)
-	// cs1.step()
-	fmt.Println(cs1)
-	printCups(cs1)
-	// cs2 := populate(input)
-	// cs2.Play(1)
-	// fmt.Println(cs2)
+	cs2 := populate(input, 9)
+	cs2.play(10_000_000)
+	fmt.Println("Part 2:", p2Prod(cs2))
+
+	fmt.Println(cs2.m[1])
 
 	fmt.Println("done")
-	// fmt.Println(cs2, len(cs2.m), cs2.h, cs2.t, cs2.m[1:20])
-	// cs2.nSteps(10_000_000)
-	// cs2.nSteps(100)
-	// fmt.Println(cs2.h, cs2.t)
-	// fmt.Println(len(cs2.m))
-
-	// fmt.Println(cs2.m[1])
-	// printCups(cs1)
-	// fmt.Println(cs2, cs2.head(), cs2.tail())
-	// nSteps(cs2, 10)
-	// fmt.Println(cs2[1])
 }
