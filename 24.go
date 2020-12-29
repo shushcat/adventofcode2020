@@ -1,12 +1,35 @@
+/*
+Hexagonal tilings.
+
+Given a list of hexagonal tiles, what is the final pattern they will assume
+following a series of flips?  Each tile is black on one side and  white on the
+other, and is uniquely specified from the reference tile at the center of the
+board.  The specification for each tile is a string composed from the
+concatenated abbreviations for the directions east, southeast, southwest, west,
+northwest, and northeast; respectively: "e", "se", "sw", "w", "nw", "ne".  For
+example, "esenee" and "nsweew" are both valid specifications.
+
+TODO Confer with the resource at
+https://www.redblobgames.com/grids/hexagons/#coordinates, and review the Reddit
+thread for this problem.
+
+*/
+
 package main
 
 import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"flag"
+	"os"
+	"log"
+	"runtime/pprof"
 )
 
 type tiles map[[2]int]bool
+
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func (ts tiles) cleanup() {
 	for k, v := range ts {
@@ -131,6 +154,16 @@ func (ts tiles) sumBlack() int {
 }
 
 func main() {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	// input := "24_small.txt"
 	input := "24.txt"
 
@@ -141,9 +174,4 @@ func main() {
 	fmt.Println("Part 2:", ts.sumBlack())
 }
 
-/*
 
-Hexagonal tilings.
-
-Given a list of hexagonal tiles, what is the final pattern they will assume following a series of flips?  Each tile is black on one side and  white on the other, and is uniquely specified from the reference tile at the center of the room.  The specification for each tile is a string composed from the concatenated abbreviations for the directions east, southeast, southwest, west, northwest, and northeast; respectively: "e", "se", "sw", "w", "nw", "ne".  For example, "esenee" and "nsweew" are both valid specifications.
-*/
