@@ -43,8 +43,7 @@ func parseLine(line string) [2]int {
 	chars := strings.Split(line, "")
 	var coord [2]int
 	for i := 0; i < len(chars); i++ {
-		c1 := chars[i]
-		switch c1 {
+		switch chars[i] {
 		case "e":
 			coord[0], coord[1] = coord[0]+1, coord[1]+-1
 		case "w":
